@@ -1,0 +1,6 @@
+[DEFAULT]
+# Specify the editor of choice
+# editor vim | nano | none
+editor = vim
+# The edit will load the following file
+filename = CHANGELOG
