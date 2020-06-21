@@ -1,0 +1,112 @@
+#!/usr/bin/python3
+
+# pip install gitpython
+import git
+import os
+import re
+from subprocess import call
+import configparser
+
+def getNextVersion(strVersion):
+    x = re.findall("^(v\d{1,4}\.\d{1,4}\.)(\d{1,4})$", strVersion)
+    next = str(int(x[0][1]) + 1)
+    return x[0][0] + next
+
+# Main
+
+def main():
+    # Check if current directory is a git repo
+    if (os.path.exists(".git") == False):
+        print(".git not found.")
+        exit(0)
+
+    # Check for Configfile
+    if (os.path.exists(".gitrelease") == False):
+        print(".gitrelease not found")
+        exit(0)
+
+    config = configparser.ConfigParser()
+    config.sections()
+    config.read('.gitrelease')
+    strEditor = config['DEFAULT']['editor']
+    strFileName = config['DEFAULT']['filename']
+
+    if strEditor != 'none':
+        if (os.path.exists(strFileName) == False):
+            print("file " + strFileName + " does not exist")
+            exit(0)
+
+    repo = git.Repo(search_parent_directories=True)
+    branch = repo.active_branch
+
+    if branch.name == 'develop':
+        print(branch.name)
+    else:
+        print('no develop branch found')
+        exit(0)
+
+    if repo.untracked_files:
+        print('develop branch has untracked files')
+        exit(0)
+
+    if repo.is_dirty():
+        print('develop branch has uncommitted files')
+        exit(0)
+
+    tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)
+    strLatestTag = str(tags[-1])
+
+    print("Current verion: " + strLatestTag)
+
+    strNextVersion = getNextVersion(strLatestTag)
+
+    string = "Give new version [" + strNextVersion + "]: "
+    new_tag = (input(string) or strNextVersion)
+    print(new_tag)
+
+    # https://git-flow.readthedocs.io/en/latest/releases.html
+    # 
+    # git flow release start v1.4.0 or
+    # git checkout -b release/v0.0.5 develop
+
+    strReleaseBranch = "release/" + new_tag
+    repo.git.checkout('HEAD', b=strReleaseBranch)
+
+
+    # Generate CHANGE LOG
+
+    # Change CHANGELOG
+    if strEditor != 'none':
+        EDITOR = os.environ.get('EDITOR',strEditor)
+        f = open(strFileName, "r")
+        call([EDITOR, f.name])
+
+    # git add CHANGELOG
+    repo.index.add('CHANGELOG')
+
+    # git commit -m "DOC"
+    repo.index.commit("DOC")
+
+    # git checkout master
+    repo.git.checkout('master')
+
+    # git merge --no-ff release/v0.0.4 -m 'Merge branch release/v0.0.4'
+    strMessage= 'Merge branch release ' + strReleaseBranch
+    repo.git.merge(strReleaseBranch, m=strMessage, no_ff=True)
+
+    # git tag -a v0.0.5 -m v0.0.5
+    repo.git.tag(m=new_tag, a=new_tag)
+
+    # git checkout develop
+    repo.git.checkout('develop')
+
+    # git merge --no-ff release/v0.0.4 -m 'Merge branch release/v0.0.4'
+    repo.git.merge(strReleaseBranch, m=strMessage, no_ff=True)
+
+    # git branch -d release/v0.0.6
+    repo.git.branch(d=strReleaseBranch)
+
+    print("Edit done")
+
+if __name__== "__main__":
+   main()
