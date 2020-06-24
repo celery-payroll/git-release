@@ -15,6 +15,8 @@ def getNextVersion(strVersion):
 # Main
 
 def main():
+    blnVerbose = False
+
     # Check if current directory is a git repo
     if (os.path.exists(".git") == False):
         print(".git not found.")
@@ -28,8 +30,13 @@ def main():
     config = configparser.ConfigParser()
     config.sections()
     config.read('.gitrelease')
+    strVerbose = config['DEFAULT']['verbose']
     strEditor = config['DEFAULT']['editor']
     strFileName = config['DEFAULT']['filename']
+    strFileCommitMessage = config['DEFAULT']['file_commit_message']
+
+    if (strVerbose.lower == "true"):
+        blnVerbose = True
 
     if strEditor != 'none':
         if (os.path.exists(strFileName) == False):
@@ -40,7 +47,8 @@ def main():
     branch = repo.active_branch
 
     if branch.name == 'develop':
-        print(branch.name)
+        if blnVerbose:
+            print(branch.name)
     else:
         print('no develop branch found')
         exit(0)
@@ -82,10 +90,10 @@ def main():
         call([EDITOR, f.name])
 
     # git add CHANGELOG
-    repo.index.add('CHANGELOG')
+    repo.index.add(strFileName)
 
-    # git commit -m "DOC"
-    repo.index.commit("DOC")
+    # git commit -m "docs: update CHANGELOG"
+    repo.index.commit(strFileCommitMessage)
 
     # git checkout master
     repo.git.checkout('master')
@@ -97,14 +105,23 @@ def main():
     # git tag -a v0.0.5 -m v0.0.5
     repo.git.tag(m=new_tag, a=new_tag)
 
+    # git push -u origin master
+    repo.git.push('master', u='origin')
+
+
+
     # git checkout develop
     repo.git.checkout('develop')
 
-    # git merge --no-ff release/v0.0.4 -m 'Merge branch release/v0.0.4'
-    repo.git.merge(strReleaseBranch, m=strMessage, no_ff=True)
+    strMessage= "Merge tag '" + new_tag + "' into develop"
+    # git merge --no-ff master -m 'Merge tag 'v0.0.14' into develop'
+    repo.git.merge('master', m=strMessage, no_ff=True)
 
     # git branch -d release/v0.0.6
     repo.git.branch(d=strReleaseBranch)
+
+    # git push -u origin develop
+    repo.git.push('develop', u='origin')
 
     print("Edit done")
 
