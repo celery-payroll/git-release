@@ -12,7 +12,7 @@ cd git-release
 ln -s git-release /usr/local/bin/git-release
 ```
 
-### copy template configfile to you're project
+### copy template configfile to your project
 ``` bash
 cp .gitrelease /Users/<user>/repos/myProject
 ```
