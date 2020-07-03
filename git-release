@@ -7,8 +7,8 @@ import re
 from subprocess import call
 import configparser
 
-def getNextVersion(strVersion):
-    x = re.findall("^(v\d{1,4}\.\d{1,4}\.)(\d{1,4})$", strVersion)
+def getNextRelease(strRelease):
+    x = re.findall("^(v\d{1,4}\.\d{1,4}\.)(\d{1,4})$", strRelease)
     next = str(int(x[0][1]) + 1)
     return x[0][0] + next
 
@@ -30,12 +30,16 @@ def main():
     config = configparser.ConfigParser()
     config.sections()
     config.read('.gitrelease')
-    strVerbose = config['DEFAULT']['verbose']
-    strEditor = config['DEFAULT']['editor']
-    strFileName = config['DEFAULT']['filename']
-    strFileCommitMessage = config['DEFAULT']['file_commit_message']
+    default = config['DEFAULT']
 
-    if (strVerbose.lower == "true"):
+    strVerbose = default.get('verbose', fallback='false')
+    strEditor = default.get('editor', fallback='none')
+    strFileName = default.get('filename', fallback='none')
+    strFileCommitMessage = default.get('file_commit_message', fallback='')
+    strCommand = default.get('command', fallback='none')
+    strArguments = default.get('arguments', fallback='none')
+
+    if (strVerbose.lower() == 'true'):
         blnVerbose = True
 
     if strEditor != 'none':
@@ -62,14 +66,17 @@ def main():
         exit(0)
 
     tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)
-    strLatestTag = str(tags[-1])
+    
+    strLatestTag = "v0.0.0"
+    if len(tags) > 0:
+        strLatestTag = str(tags[-1])
 
-    print("Current verion: " + strLatestTag)
+    print("Current release: " + strLatestTag)
 
-    strNextVersion = getNextVersion(strLatestTag)
+    strNextRelease = getNextRelease(strLatestTag)
 
-    string = "Give new version [" + strNextVersion + "]: "
-    new_tag = (input(string) or strNextVersion)
+    string = "Give new Release [" + strNextRelease + "]: "
+    new_tag = (input(string) or strNextRelease)
     print(new_tag)
 
     # https://git-flow.readthedocs.io/en/latest/releases.html
@@ -81,19 +88,28 @@ def main():
     repo.git.checkout('HEAD', b=strReleaseBranch)
 
 
-    # Generate CHANGE LOG
+    strArguments = strArguments.replace("{current_release}", strLatestTag)
+    strArguments = strArguments.replace("{new_release}", new_tag)
 
-    # Change CHANGELOG
-    if strEditor != 'none':
-        EDITOR = os.environ.get('EDITOR',strEditor)
-        f = open(strFileName, "r")
-        call([EDITOR, f.name])
+    if blnVerbose:
+        print(strCommand + " " + strArguments)
+    
+    if strFileName != 'none':
+        # Generate CHANGELOG
+        if strCommand != 'none':
+            call([strCommand,strArguments])
 
-    # git add CHANGELOG
-    repo.index.add(strFileName)
+        # Manual Change CHANGELOG
+        if strEditor != 'none':
+            EDITOR = os.environ.get('EDITOR',strEditor)
+            f = open(strFileName, "r")
+            call([EDITOR, f.name])
 
-    # git commit -m "docs: update CHANGELOG"
-    repo.index.commit(strFileCommitMessage)
+        # git add CHANGELOG
+        repo.index.add(strFileName)
+
+        # git commit -m "docs: update CHANGELOG"
+        repo.index.commit(strFileCommitMessage)
 
     # git checkout master
     repo.git.checkout('master')
@@ -106,9 +122,7 @@ def main():
     repo.git.tag(m=new_tag, a=new_tag)
 
     # git push -u origin master
-    repo.git.push('master', u='origin')
-
-
+    repo.git.push('master', u='origin', tags=True)
 
     # git checkout develop
     repo.git.checkout('develop')
@@ -121,9 +135,9 @@ def main():
     repo.git.branch(d=strReleaseBranch)
 
     # git push -u origin develop
-    repo.git.push('develop', u='origin')
+    repo.git.push('develop', u='origin', tags=True)
 
-    print("Edit done")
+    print("Release " + new_tag + " done.")
 
 if __name__== "__main__":
    main()
