@@ -36,8 +36,10 @@ def main():
     strEditor = default.get('editor', fallback='none')
     strFileName = default.get('filename', fallback='none')
     strFileCommitMessage = default.get('file_commit_message', fallback='')
-    strCommand = default.get('command', fallback='none')
-    strArguments = default.get('arguments', fallback='none')
+    strCommand1 = default.get('cmd1', fallback='none')
+    strArguments1 = default.get('cmd1_arguments', fallback='none')
+    strCommand2 = default.get('cmd2', fallback='none')
+    strArguments2 = default.get('cmd2_arguments', fallback='none')
 
     if (strVerbose.lower() == 'true'):
         blnVerbose = True
@@ -88,16 +90,16 @@ def main():
     repo.git.checkout('HEAD', b=strReleaseBranch)
 
 
-    strArguments = strArguments.replace("{current_release}", strLatestTag)
-    strArguments = strArguments.replace("{new_release}", new_tag)
+    strArguments1 = strArguments1.replace("{current_release}", strLatestTag)
+    strArguments1 = strArguments1.replace("{new_release}", new_tag)
 
     if blnVerbose:
-        print(strCommand + " " + strArguments)
+        print(strCommand1 + " " + strArguments1)
     
     if strFileName != 'none':
         # Generate CHANGELOG
-        if strCommand != 'none':
-            call([strCommand,strArguments])
+        if strCommand1 != 'none':
+            call([strCommand1,strArguments1])
 
         # Manual Change CHANGELOG
         if strEditor != 'none':
@@ -138,6 +140,12 @@ def main():
     repo.git.push('develop', u='origin', tags=True)
 
     print("Release " + new_tag + " done.")
+
+    if blnVerbose:
+        print(strCommand2 + " " + strArguments2)
+
+    if strCommand2 != 'none':
+        call([strCommand2,strArguments2])
 
 if __name__== "__main__":
    main()
