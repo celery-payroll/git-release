@@ -1,5 +1,10 @@
 # git-release
 
+### Install git python
+``` bash
+pip install gitpython
+```
+
 ### Download from source
 ``` bash
 cd /Users/<user>/repos
