@@ -2,7 +2,7 @@
 
 ### Install git python
 ``` bash
-pip install gitpython
+pip3 install gitpython
 ```
 
 ### Download from source
