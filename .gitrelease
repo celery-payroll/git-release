@@ -18,8 +18,8 @@ editor = none
 # filename = none | CHANGELOG.md
 filename = none
 
-# file_commit_message 
-file_commit_message
+# file_commit_message
+file_commit_message = none
 
 # cmd2 that runs after release is pushed to origin
 cmd2 = none
