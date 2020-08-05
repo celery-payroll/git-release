@@ -4,17 +4,38 @@
 import git
 import os
 import re
+import sys
+import threading
+import time
+import itertools
 from subprocess import call
 import configparser
+
+blnDone = False
 
 def getNextRelease(strRelease):
     x = re.findall("^(v\d{1,4}\.\d{1,4}\.)(\d{1,4})$", strRelease)
     next = str(int(x[0][1]) + 1)
     return x[0][0] + next
 
+def animate(var):
+    global blnDone
+    if (var == 'd'):
+        var = 'develop'
+    else:
+        var = 'master'
+    for c in itertools.cycle(['|', '/', '-', '\\']):
+        if blnDone:
+            break
+        sys.stdout.write('\rPush to ' + var + ' ' + c)
+        sys.stdout.flush()
+        time.sleep(0.1)
+    sys.stdout.write('\rPush to ' + var + ' done.\n')
+
 # Main
 
 def main():
+    global blnDone
     blnVerbose = False
 
     # Check if current directory is a git repo
@@ -79,7 +100,7 @@ def main():
 
     string = "Give new Release [" + strNextRelease + "]: "
     new_tag = (input(string) or strNextRelease)
-    print(new_tag)
+    print("new release: " + new_tag)
 
     # https://git-flow.readthedocs.io/en/latest/releases.html
     # 
@@ -89,9 +110,11 @@ def main():
     strReleaseBranch = "release/" + new_tag
     repo.git.checkout('HEAD', b=strReleaseBranch)
 
-
     strArguments1 = strArguments1.replace("{current_release}", strLatestTag)
     strArguments1 = strArguments1.replace("{new_release}", new_tag)
+
+    strArguments2 = strArguments1.replace("{current_release}", strLatestTag)
+    strArguments2 = strArguments1.replace("{new_release}", new_tag)
 
     if blnVerbose:
         print(strCommand1 + " " + strArguments1)
@@ -109,9 +132,13 @@ def main():
 
         # git add CHANGELOG
         repo.index.add(strFileName)
+        print("Commit " + strFileName)
 
         # git commit -m "docs: update CHANGELOG"
         repo.index.commit(strFileCommitMessage)
+    
+    t = threading.Thread(target=animate, args='m')
+    t.start()
 
     # git checkout master
     repo.git.checkout('master')
@@ -126,6 +153,12 @@ def main():
     # git push -u origin master
     repo.git.push('master', u='origin', tags=True)
 
+    blnDone = True
+    time.sleep(0.2)
+    blnDone = False
+    t = threading.Thread(target=animate, args='d')
+    t.start()
+
     # git checkout develop
     repo.git.checkout('develop')
 
@@ -138,6 +171,9 @@ def main():
 
     # git push -u origin develop
     repo.git.push('develop', u='origin', tags=True)
+
+    blnDone = True
+    time.sleep(0.2)
 
     print("Release " + new_tag + " done.")
 
