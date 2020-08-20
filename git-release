@@ -89,7 +89,7 @@ def main():
         exit(0)
 
     tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)
-    
+
     strLatestTag = "v0.0.0"
     if len(tags) > 0:
         strLatestTag = str(tags[-1])
@@ -103,7 +103,7 @@ def main():
     print("new release: " + new_tag)
 
     # https://git-flow.readthedocs.io/en/latest/releases.html
-    # 
+    #
     # git flow release start v1.4.0 or
     # git checkout -b release/v0.0.5 develop
 
@@ -113,12 +113,12 @@ def main():
     strArguments1 = strArguments1.replace("{current_release}", strLatestTag)
     strArguments1 = strArguments1.replace("{new_release}", new_tag)
 
-    strArguments2 = strArguments1.replace("{current_release}", strLatestTag)
-    strArguments2 = strArguments1.replace("{new_release}", new_tag)
+    strArguments2 = strArguments2.replace("{current_release}", strLatestTag)
+    strArguments2 = strArguments2.replace("{new_release}", new_tag)
 
     if blnVerbose:
         print(strCommand1 + " " + strArguments1)
-    
+
     if strFileName != 'none':
         # Generate CHANGELOG
         if strCommand1 != 'none':
@@ -136,7 +136,7 @@ def main():
 
         # git commit -m "docs: update CHANGELOG"
         repo.index.commit(strFileCommitMessage)
-    
+
     t = threading.Thread(target=animate, args='m')
     t.start()
 
