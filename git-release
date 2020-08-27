@@ -32,6 +32,15 @@ def animate(var):
         time.sleep(0.1)
     sys.stdout.write('\rPush to ' + var + ' done.\n')
 
+def runCommand(strCmd, strArgs):
+    arrCmdAndArgs = []
+    if strArgs != 'none':
+        arrCmdAndArgs = strArgs.split()
+
+    arrCmdAndArgs.insert(0, strCmd)
+    if strCmd != 'none':
+        call(arrCmdAndArgs)
+
 # Main
 
 def main():
@@ -122,7 +131,7 @@ def main():
     if strFileName != 'none':
         # Generate CHANGELOG
         if strCommand1 != 'none':
-            call([strCommand1,strArguments1])
+            runCommand(strCommand1, strArguments1)
 
         # Manual Change CHANGELOG
         if strEditor != 'none':
@@ -180,8 +189,7 @@ def main():
     if blnVerbose:
         print(strCommand2 + " " + strArguments2)
 
-    if strCommand2 != 'none':
-        call([strCommand2,strArguments2])
+    runCommand(strCommand2, strArguments2)
 
 if __name__== "__main__":
    main()
