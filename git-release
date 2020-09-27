@@ -152,8 +152,8 @@ def main():
     # git checkout master
     repo.git.checkout('master')
 
-    # git merge --no-ff release/v0.0.4 -m 'Merge branch release/v0.0.4'
-    strMessage= 'Merge branch release ' + strReleaseBranch
+    # git merge --no-ff release/v0.0.4 -m "Merge branch 'release/v0.0.4'"
+    strMessage= "Merge branch '" + strReleaseBranch + "'"
     repo.git.merge(strReleaseBranch, m=strMessage, no_ff=True)
 
     # git tag -a v0.0.5 -m v0.0.5
@@ -171,8 +171,8 @@ def main():
     # git checkout develop
     repo.git.checkout('develop')
 
+    # git merge --no-ff master -m "Merge tag 'v0.0.14' into develop"
     strMessage= "Merge tag '" + new_tag + "' into develop"
-    # git merge --no-ff master -m 'Merge tag 'v0.0.14' into develop'
     repo.git.merge('master', m=strMessage, no_ff=True)
 
     # git branch -d release/v0.0.6
