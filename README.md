@@ -12,7 +12,7 @@ git clone https://github.com/wiebekn/git-release.git
 cd git-release
 ```
 
-### make syslink so you can run it from everywhere
+### make symlink so you can run it from everywhere
 ``` bash
 ln -s git-release /usr/local/bin/git-release
 ```
