@@ -12,16 +12,16 @@ git clone https://github.com/wiebekn/git-release.git
 cd git-release
 ```
 
-### make symlink so you can run it from everywhere
+### Make symlink so you can run it from everywhere
 ``` bash
 ln -s git-release /usr/local/bin/git-release
 ```
 
-### copy template configfile to your project
+### Copy template configfile to your project
 ``` bash
 cp .gitrelease /Users/<user>/repos/myProject
 ```
-### usage
+### Usage
 change .gitrelease to your needs
 and run 
 ``` bash
