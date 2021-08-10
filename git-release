@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
 
 # pip install gitpython
 import git
@@ -12,6 +12,7 @@ from subprocess import call
 import configparser
 
 blnDone = False
+sourceBranch = 'develop'
 
 def getNextRelease(strRelease):
     x = re.findall("^(v\d{1,4}\.\d{1,4}\.)(\d{1,4})$", strRelease)
@@ -21,7 +22,7 @@ def getNextRelease(strRelease):
 def animate(var):
     global blnDone
     if (var == 'd'):
-        var = 'develop'
+        var = sourceBranch
     else:
         var = 'master'
     for c in itertools.cycle(['|', '/', '-', '\\']):
@@ -82,19 +83,19 @@ def main():
     repo = git.Repo(search_parent_directories=True)
     branch = repo.active_branch
 
-    if branch.name == 'develop':
+    if branch.name == sourceBranch:
         if blnVerbose:
             print(branch.name)
     else:
-        print('no develop branch found')
+        print('no ' + sourceBranch + ' branch found')
         exit(0)
 
     if repo.untracked_files:
-        print('develop branch has untracked files')
+        print(sourceBranch + ' branch has untracked files')
         exit(0)
 
     if repo.is_dirty():
-        print('develop branch has uncommitted files')
+        print(sourceBranch + ' branch has uncommitted files')
         exit(0)
 
     tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)
@@ -169,17 +170,17 @@ def main():
     t.start()
 
     # git checkout develop
-    repo.git.checkout('develop')
+    repo.git.checkout(sourceBranch)
 
     # git merge --no-ff master -m "Merge tag 'v0.0.14' into develop"
-    strMessage= "Merge tag '" + new_tag + "' into develop"
+    strMessage= "Merge tag '" + new_tag + "' into " + sourceBranch
     repo.git.merge('master', m=strMessage, no_ff=True)
 
     # git branch -d release/v0.0.6
     repo.git.branch(d=strReleaseBranch)
 
     # git push -u origin develop
-    repo.git.push('develop', u='origin', tags=True)
+    repo.git.push(sourceBranch, u='origin', tags=True)
 
     blnDone = True
     time.sleep(0.2)
