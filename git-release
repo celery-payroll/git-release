@@ -13,6 +13,7 @@ import configparser
 
 blnDone = False
 sourceBranch = 'develop'
+targetBranch = 'master'
 
 def getNextRelease(strRelease):
     x = re.findall("^(v\d{1,4}\.\d{1,4}\.)(\d{1,4})$", strRelease)
@@ -21,10 +22,12 @@ def getNextRelease(strRelease):
 
 def animate(var):
     global blnDone
+    global sourceBranch
+    global targetBranch
     if (var == 'd'):
         var = sourceBranch
     else:
-        var = 'master'
+        var = targetBranch
     for c in itertools.cycle(['|', '/', '-', '\\']):
         if blnDone:
             break
@@ -46,6 +49,8 @@ def runCommand(strCmd, strArgs):
 
 def main():
     global blnDone
+    global sourceBranch
+    global targetBranch
     blnVerbose = False
 
     # Check if current directory is a git repo
@@ -64,6 +69,8 @@ def main():
     default = config['DEFAULT']
 
     strVerbose = default.get('verbose', fallback='false')
+    sourceBranch = default.get('source', fallback='develop')
+    targetBranch = default.get('target', fallback='master')
     strEditor = default.get('editor', fallback='none')
     strFileName = default.get('filename', fallback='none')
     strFileCommitMessage = default.get('file_commit_message', fallback='')
@@ -150,8 +157,8 @@ def main():
     t = threading.Thread(target=animate, args='m')
     t.start()
 
-    # git checkout master
-    repo.git.checkout('master')
+    # git checkout target
+    repo.git.checkout(targetBranch)
 
     # git merge --no-ff release/v0.0.4 -m "Merge branch 'release/v0.0.4'"
     strMessage= "Merge branch '" + strReleaseBranch + "'"
@@ -160,8 +167,8 @@ def main():
     # git tag -a v0.0.5 -m v0.0.5
     repo.git.tag(m=new_tag, a=new_tag)
 
-    # git push -u origin master
-    repo.git.push('master', u='origin', tags=True)
+    # git push -u origin target
+    repo.git.push(targetBranch, u='origin', tags=True)
 
     blnDone = True
     time.sleep(0.2)
@@ -172,9 +179,9 @@ def main():
     # git checkout develop
     repo.git.checkout(sourceBranch)
 
-    # git merge --no-ff master -m "Merge tag 'v0.0.14' into develop"
+    # git merge --no-ff target -m "Merge tag 'v0.0.14' into develop"
     strMessage= "Merge tag '" + new_tag + "' into " + sourceBranch
-    repo.git.merge('master', m=strMessage, no_ff=True)
+    repo.git.merge(targetBranch, m=strMessage, no_ff=True)
 
     # git branch -d release/v0.0.6
     repo.git.branch(d=strReleaseBranch)
