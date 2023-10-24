@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # pip install gitpython
 import git
@@ -12,6 +12,8 @@ from subprocess import call
 import configparser
 
 blnDone = False
+sourceBranch = 'develop'
+targetBranch = 'master'
 
 def getNextRelease(strRelease):
     x = re.findall("^(v\d{1,4}\.\d{1,4}\.)(\d{1,4})$", strRelease)
@@ -20,10 +22,12 @@ def getNextRelease(strRelease):
 
 def animate(var):
     global blnDone
+    global sourceBranch
+    global targetBranch
     if (var == 'd'):
-        var = 'develop'
+        var = sourceBranch
     else:
-        var = 'master'
+        var = targetBranch
     for c in itertools.cycle(['|', '/', '-', '\\']):
         if blnDone:
             break
@@ -32,10 +36,21 @@ def animate(var):
         time.sleep(0.1)
     sys.stdout.write('\rPush to ' + var + ' done.\n')
 
+def runCommand(strCmd, strArgs):
+    arrCmdAndArgs = []
+    if strArgs != 'none':
+        arrCmdAndArgs = strArgs.split()
+
+    arrCmdAndArgs.insert(0, strCmd)
+    if strCmd != 'none':
+        call(arrCmdAndArgs)
+
 # Main
 
 def main():
     global blnDone
+    global sourceBranch
+    global targetBranch
     blnVerbose = False
 
     # Check if current directory is a git repo
@@ -54,6 +69,8 @@ def main():
     default = config['DEFAULT']
 
     strVerbose = default.get('verbose', fallback='false')
+    sourceBranch = default.get('source', fallback='develop')
+    targetBranch = default.get('target', fallback='master')
     strEditor = default.get('editor', fallback='none')
     strFileName = default.get('filename', fallback='none')
     strFileCommitMessage = default.get('file_commit_message', fallback='')
@@ -73,23 +90,23 @@ def main():
     repo = git.Repo(search_parent_directories=True)
     branch = repo.active_branch
 
-    if branch.name == 'develop':
+    if branch.name == sourceBranch:
         if blnVerbose:
             print(branch.name)
     else:
-        print('no develop branch found')
+        print('no ' + sourceBranch + ' branch found')
         exit(0)
 
     if repo.untracked_files:
-        print('develop branch has untracked files')
+        print(sourceBranch + ' branch has untracked files')
         exit(0)
 
     if repo.is_dirty():
-        print('develop branch has uncommitted files')
+        print(sourceBranch + ' branch has uncommitted files')
         exit(0)
 
     tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)
-    
+
     strLatestTag = "v0.0.0"
     if len(tags) > 0:
         strLatestTag = str(tags[-1])
@@ -103,7 +120,7 @@ def main():
     print("new release: " + new_tag)
 
     # https://git-flow.readthedocs.io/en/latest/releases.html
-    # 
+    #
     # git flow release start v1.4.0 or
     # git checkout -b release/v0.0.5 develop
 
@@ -113,16 +130,16 @@ def main():
     strArguments1 = strArguments1.replace("{current_release}", strLatestTag)
     strArguments1 = strArguments1.replace("{new_release}", new_tag)
 
-    strArguments2 = strArguments1.replace("{current_release}", strLatestTag)
-    strArguments2 = strArguments1.replace("{new_release}", new_tag)
+    strArguments2 = strArguments2.replace("{current_release}", strLatestTag)
+    strArguments2 = strArguments2.replace("{new_release}", new_tag)
 
     if blnVerbose:
         print(strCommand1 + " " + strArguments1)
-    
+
     if strFileName != 'none':
         # Generate CHANGELOG
         if strCommand1 != 'none':
-            call([strCommand1,strArguments1])
+            runCommand(strCommand1, strArguments1)
 
         # Manual Change CHANGELOG
         if strEditor != 'none':
@@ -136,22 +153,22 @@ def main():
 
         # git commit -m "docs: update CHANGELOG"
         repo.index.commit(strFileCommitMessage)
-    
+
     t = threading.Thread(target=animate, args='m')
     t.start()
 
-    # git checkout master
-    repo.git.checkout('master')
+    # git checkout target
+    repo.git.checkout(targetBranch)
 
-    # git merge --no-ff release/v0.0.4 -m 'Merge branch release/v0.0.4'
-    strMessage= 'Merge branch release ' + strReleaseBranch
+    # git merge --no-ff release/v0.0.4 -m "Merge branch 'release/v0.0.4'"
+    strMessage= "Merge branch '" + strReleaseBranch + "'"
     repo.git.merge(strReleaseBranch, m=strMessage, no_ff=True)
 
     # git tag -a v0.0.5 -m v0.0.5
     repo.git.tag(m=new_tag, a=new_tag)
 
-    # git push -u origin master
-    repo.git.push('master', u='origin', tags=True)
+    # git push -u origin target
+    repo.git.push(targetBranch, u='origin', tags=True)
 
     blnDone = True
     time.sleep(0.2)
@@ -160,17 +177,17 @@ def main():
     t.start()
 
     # git checkout develop
-    repo.git.checkout('develop')
+    repo.git.checkout(sourceBranch)
 
-    strMessage= "Merge tag '" + new_tag + "' into develop"
-    # git merge --no-ff master -m 'Merge tag 'v0.0.14' into develop'
-    repo.git.merge('master', m=strMessage, no_ff=True)
+    # git merge --no-ff target -m "Merge tag 'v0.0.14' into develop"
+    strMessage= "Merge tag '" + new_tag + "' into " + sourceBranch
+    repo.git.merge(targetBranch, m=strMessage, no_ff=True)
 
     # git branch -d release/v0.0.6
     repo.git.branch(d=strReleaseBranch)
 
     # git push -u origin develop
-    repo.git.push('develop', u='origin', tags=True)
+    repo.git.push(sourceBranch, u='origin', tags=True)
 
     blnDone = True
     time.sleep(0.2)
@@ -180,8 +197,7 @@ def main():
     if blnVerbose:
         print(strCommand2 + " " + strArguments2)
 
-    if strCommand2 != 'none':
-        call([strCommand2,strArguments2])
+    runCommand(strCommand2, strArguments2)
 
 if __name__== "__main__":
    main()
