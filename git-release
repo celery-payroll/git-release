@@ -16,7 +16,7 @@ sourceBranch = 'develop'
 targetBranch = 'master'
 
 def getNextRelease(strRelease):
-    x = re.findall("^(v\d{1,4}\.\d{1,4}\.)(\d{1,4})$", strRelease)
+    x = re.findall(r"^(v\d{1,4}\.\d{1,4}\.)(\d{1,4})$", strRelease)
     next = str(int(x[0][1]) + 1)
     return x[0][0] + next
 
@@ -72,19 +72,23 @@ def main():
     sourceBranch = default.get('source', fallback='develop')
     targetBranch = default.get('target', fallback='master')
     strEditor = default.get('editor', fallback='none')
-    strFileName = default.get('filename', fallback='none')
-    strFileCommitMessage = default.get('file_commit_message', fallback='')
     strCommand1 = default.get('cmd1', fallback='none')
     strArguments1 = default.get('cmd1_arguments', fallback='none')
+    strCommand1FileName = default.get('cmd1_filename', fallback='none')
+    strCommand1CommitMessage = default.get('cmd1_commit_message', fallback='')
     strCommand2 = default.get('cmd2', fallback='none')
     strArguments2 = default.get('cmd2_arguments', fallback='none')
+    strCommand2FileName = default.get('cmd2_filename', fallback='none')
+    strCommand2CommitMessage = default.get('cmd2_commit_message', fallback='')
+    strCommand3 = default.get('cmd3', fallback='none')
+    strArguments3 = default.get('cmd3_arguments', fallback='none')
 
     if (strVerbose.lower() == 'true'):
         blnVerbose = True
 
     if strEditor != 'none':
-        if (os.path.exists(strFileName) == False):
-            print("file " + strFileName + " does not exist")
+        if (os.path.exists(strCommand1FileName) == False):
+            print("file " + strCommand1FileName + " does not exist")
             exit(0)
 
     repo = git.Repo(search_parent_directories=True)
@@ -133,26 +137,50 @@ def main():
     strArguments2 = strArguments2.replace("{current_release}", strLatestTag)
     strArguments2 = strArguments2.replace("{new_release}", new_tag)
 
+    strArguments3 = strArguments3.replace("{current_release}", strLatestTag)
+    strArguments3 = strArguments3.replace("{new_release}", new_tag)
+
     if blnVerbose:
         print(strCommand1 + " " + strArguments1)
 
-    if strFileName != 'none':
+    if strCommand1FileName != 'none':
         # Generate CHANGELOG
         if strCommand1 != 'none':
             runCommand(strCommand1, strArguments1)
 
         # Manual Change CHANGELOG
         if strEditor != 'none':
-            EDITOR = os.environ.get('EDITOR',strEditor)
-            f = open(strFileName, "r")
+            EDITOR = os.environ.get('EDITOR', strEditor)
+            f = open(strCommand1FileName, "r")
             call([EDITOR, f.name])
 
         # git add CHANGELOG
-        repo.index.add(strFileName)
-        print("Commit " + strFileName)
+        repo.index.add(strCommand1FileName)
+        print("Commit " + strCommand1FileName)
 
         # git commit -m "docs: update CHANGELOG"
-        repo.index.commit(strFileCommitMessage)
+        repo.index.commit(strCommand1CommitMessage)
+
+    if blnVerbose:
+        print(strCommand2 + " " + strArguments2)
+
+    if strCommand2FileName != 'none':
+        # Generate RELEASE_NOTES
+        if strCommand2 != 'none':
+            runCommand(strCommand2, strArguments2)
+
+        # Manual Change CHANGELOG
+        if strEditor != 'none':
+            EDITOR = os.environ.get('EDITOR', strEditor)
+            f = open(strCommand2FileName, "r")
+            call([EDITOR, f.name])
+
+        # git add CHANGELOG
+        repo.index.add(strCommand2FileName)
+        print("Commit " + strCommand2FileName)
+
+        # git commit -m "docs: update CHANGELOG"
+        repo.index.commit(strCommand2CommitMessage)
 
     t = threading.Thread(target=animate, args='m')
     t.start()
@@ -195,9 +223,9 @@ def main():
     print("Release " + new_tag + " done.")
 
     if blnVerbose:
-        print(strCommand2 + " " + strArguments2)
+        print(strCommand3 + " " + strArguments3)
 
-    runCommand(strCommand2, strArguments2)
+    runCommand(strCommand3, strArguments3)
 
 if __name__== "__main__":
    main()
