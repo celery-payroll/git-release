@@ -16,7 +16,7 @@ sourceBranch = 'develop'
 targetBranch = 'master'
 
 def getNextRelease(strRelease):
-    x = re.findall(r"^(v\d{1,4}\.\d{1,4}\.)(\d{1,4})$", strRelease)
+    x = re.findall(r"^(v\d{1,4}\.\d{1,4}\.)(\d{1,4})(\.\d{1,4})?$", strRelease)
     next = str(int(x[0][1]) + 1)
     return x[0][0] + next
 
@@ -86,7 +86,7 @@ def main():
     if (strVerbose.lower() == 'true'):
         blnVerbose = True
 
-    if strEditor != 'none':
+    if strCommand1 != 'none':
         if (os.path.exists(strCommand1FileName) == False):
             print("file " + strCommand1FileName + " does not exist")
             exit(0)
